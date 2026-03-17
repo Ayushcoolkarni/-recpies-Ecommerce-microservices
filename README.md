@@ -11,7 +11,7 @@ A scalable **Spring Boot Microservices-based E-commerce system** built with **Do
 * **API Gateway:** Spring Cloud Gateway
 * **Service Discovery:** Eureka Server
 * **Messaging:** Apache Kafka
-* **Database:** (Add your DB here - MySQL / PostgreSQL / MongoDB)
+* **Database:**  PostgreSQL 
 * **Containerization:** Docker & Docker Compose
 
 ---
