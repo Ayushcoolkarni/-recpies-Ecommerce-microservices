@@ -4,28 +4,110 @@ server:
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
+      # Eureka auto-discovery (fallback for any service not explicitly listed below)
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
+
+      # Global CORS — allows any frontend origin during development
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"   # React dev server
+              - "http://localhost:4200"   # Angular dev server
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
       routes:
+
+        # ── USER SERVICE ──────────────────────────────────────────
+        # Public: register & login — no JWT required
+        - id: auth-service
+          uri: lb://user-service
+          predicates:
+            - Path=/auth/**
+
+        # Protected: user profile & address management
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/users/**
+          filters:
+            - AuthenticationFilter
+
+        # ── ORDER SERVICE ─────────────────────────────────────────
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/orders/**
+          filters:
+            - AuthenticationFilter
 
-        - id: notification-service
-          uri: lb://notification-service
+        # Cart endpoints (new)
+        - id: cart-service
+          uri: lb://order-service
           predicates:
-            - Path=/notifications/**
+            - Path=/cart/**
+          filters:
+            - AuthenticationFilter
 
+        # ── INVENTORY SERVICE ─────────────────────────────────────
         - id: inventory-service
           uri: lb://inventory-service
           predicates:
             - Path=/products/**
+          filters:
+            - AuthenticationFilter
 
+        # ── PAYMENT SERVICE ───────────────────────────────────────
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/payments/**
+          filters:
+            - AuthenticationFilter
+
+        # ── RECIPE SERVICE ────────────────────────────────────────
+        - id: recipe-service
+          uri: lb://recipe-service
+          predicates:
+            - Path=/recipes/**
+          filters:
+            - AuthenticationFilter
+
+        # Recipe suggestions
+        - id: suggestion-service
+          uri: lb://recipe-service
+          predicates:
+            - Path=/suggestions/**
+          filters:
+            - AuthenticationFilter
+
+        # ── NOTIFICATION SERVICE ──────────────────────────────────
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/notifications/**
+          filters:
+            - AuthenticationFilter
+
+        # ── ADMIN SERVICE ─────────────────────────────────────────
+        # Requires JWT + role=ADMIN (enforced in AuthenticationFilter)
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin/**
+          filters:
+            - AuthenticationFilter
+
+# Eureka registration
 eureka:
   client:
     service-url:
@@ -33,6 +115,11 @@ eureka:
   instance:
     prefer-ip-address: true
 
+# JWT secret — MUST match jwt.secret in user-service application.properties
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+
+# Actuator
 management:
   endpoints:
     web:

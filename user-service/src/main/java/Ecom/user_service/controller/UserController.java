@@ -44,4 +44,5 @@ public class UserController {
         userService.removeSavedRecipe(id, recipeId);
         return ResponseEntity.noContent().build();
     }
+
 }

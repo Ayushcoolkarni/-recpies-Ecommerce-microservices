@@ -67,6 +67,7 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
+
     @Override
     public UserResponse getUserById(Long id) {
         return userMapper.toResponse(userRepository.findById(id)
