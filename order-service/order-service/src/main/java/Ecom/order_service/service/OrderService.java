@@ -13,4 +13,5 @@ public interface OrderService {
     OrderResponse updateOrderStatus(Long id, OrderStatus status);
     void cancelOrder(Long id);
     OrderTrackingResponse getOrderTracking(Long id);
+    List<OrderResponse> getAllOrders();
 }

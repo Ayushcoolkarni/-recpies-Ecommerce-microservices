@@ -101,4 +101,35 @@ public final class EmailTemplates {
                 </html>
                 """.formatted(orderId);
     }
+    public static String buildPaymentConfirmed(Long orderId, Double totalAmount) {
+        return """
+                <html><body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
+                <div style="background:#f0fdf4;padding:28px;border-radius:10px;">
+                <h2 style="color:#166534;margin-top:0;">Payment Successful!</h2>
+                <p>Your payment is confirmed and your order is being processed.</p>
+                <table style="width:100%%;border-collapse:collapse;background:#fff;padding:16px;border-radius:8px;">
+                <tr><td style="color:#888;">Order ID</td><td style="font-weight:bold;text-align:right;">#%d</td></tr>
+                <tr><td style="color:#888;">Amount Paid</td><td style="font-weight:bold;text-align:right;">%.2f</td></tr>
+                <tr><td style="color:#888;">Status</td><td style="color:#166534;font-weight:bold;text-align:right;">CONFIRMED</td></tr>
+                </table>
+                <p style="font-size:12px;color:#aaa;margin-top:20px;">RecipeEcom</p>
+                </div></body></html>
+                """.formatted(orderId, totalAmount);
+    }
+
+    public static String buildOrderCancelled(Long orderId) {
+        return """
+                <html><body style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;">
+                <div style="background:#fff7f7;padding:28px;border-radius:10px;">
+                <h2 style="color:#991b1b;margin-top:0;">Order Cancelled</h2>
+                <p>Your order could not be processed and has been automatically cancelled.</p>
+                <table style="width:100%%;border-collapse:collapse;background:#fff;padding:16px;border-radius:8px;">
+                <tr><td style="color:#888;">Order ID</td><td style="font-weight:bold;text-align:right;">#%d</td></tr>
+                <tr><td style="color:#888;">Reason</td><td style="color:#991b1b;text-align:right;">Payment failed</td></tr>
+                </table>
+                <p>If any amount was charged a refund will be issued within 5-7 business days.</p>
+                <p style="font-size:12px;color:#aaa;margin-top:20px;">RecipeEcom</p>
+                </div></body></html>
+                """.formatted(orderId);
+    }
 }

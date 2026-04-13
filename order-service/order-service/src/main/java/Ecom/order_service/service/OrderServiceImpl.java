@@ -169,6 +169,13 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    @Override
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream()
+                .map(orderMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
     // ── private helpers ──────────────────────────────────────────
 
     private Order findOrder(Long id) {

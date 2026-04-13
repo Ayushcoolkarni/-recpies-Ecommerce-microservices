@@ -67,6 +67,30 @@ public class NotificationServiceImpl implements NotificationService {
                 event.getUserId(), event.getOrderId());
     }
 
+    // ── Payment Confirmed (SAGA) ──────────────────────────────────
+
+    @Override
+    public void sendPaymentConfirmedNotification(OrderPlacedEvent event) {
+        String email = resolveEmail(event);
+        if (email == null) return;
+        emailService.sendHtml(
+                email,
+                "Payment Confirmed – Order #" + event.getOrderId(),
+                EmailTemplates.buildPaymentConfirmed(event.getOrderId(), event.getTotalAmount()));
+        log.info("Payment confirmed email sent userId={} orderId={}", event.getUserId(), event.getOrderId());
+    }
+
+    @Override
+    public void sendOrderCancelledNotification(OrderPlacedEvent event) {
+        String email = resolveEmail(event);
+        if (email == null) return;
+        emailService.sendHtml(
+                email,
+                "Order #" + event.getOrderId() + " Has Been Cancelled",
+                EmailTemplates.buildOrderCancelled(event.getOrderId()));
+        log.warn("Order cancelled email sent userId={} orderId={}", event.getUserId(), event.getOrderId());
+    }
+
     // ── private helpers ───────────────────────────────────────────
 
     /**

@@ -43,4 +43,15 @@ public class OrderEventConsumer {
                 event.getOrderId(), event.getUserId());
         notificationService.sendDeliveryNotification(event);
     }
+    @KafkaListener(topics = "order.confirmed", groupId = "notification-group")
+    public void onOrderConfirmed(OrderPlacedEvent event) {
+        log.info("Received order.confirmed — orderId={}", event.getOrderId());
+        notificationService.sendPaymentConfirmedNotification(event);
+    }
+
+    @KafkaListener(topics = "order.cancelled", groupId = "notification-group")
+    public void onOrderCancelled(OrderPlacedEvent event) {
+        log.warn("Received order.cancelled — orderId={}", event.getOrderId());
+        notificationService.sendOrderCancelledNotification(event);
+    }
 }

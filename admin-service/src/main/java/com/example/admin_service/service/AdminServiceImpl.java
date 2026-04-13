@@ -39,7 +39,7 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public Object getAllOrders() {
         return orderRestClient.get()
-                .uri("/orders")
+                .uri("/orders/all")
                 .retrieve()
                 .body(Object.class);
     }
@@ -162,7 +162,7 @@ public class AdminServiceImpl implements AdminService {
         List<Map<String, Object>> orders;
         try {
             orders = (List<Map<String, Object>>) orderRestClient.get()
-                    .uri("/orders")
+                    .uri("/orders/all")
                     .retrieve()
                     .body(List.class);
         } catch (Exception e) {

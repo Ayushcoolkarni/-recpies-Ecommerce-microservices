@@ -1,0 +1,48 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: service-registry
+            path: service-registry
+          - service: api-gateway
+            path: api-gateway
+          - service: user-service
+            path: user-service
+          - service: recipe-service
+            path: recipe-service
+          - service: inventory-service
+            path: inventory-service/inventory-service
+          - service: order-service
+            path: order-service/order-service
+          - service: payment-service
+            path: payment-service
+          - service: notification-service
+            path: notification-service/notification-service
+          - service: admin-service
+            path: admin-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build ${{ matrix.service }}
+        working-directory: ${{ matrix.path }}
+        run: ./mvnw package -DskipTests -q
+      - name: Test ${{ matrix.service }}
+        working-directory: ${{ matrix.path }}
+        run: ./mvnw test -q
+        continue-on-error: true

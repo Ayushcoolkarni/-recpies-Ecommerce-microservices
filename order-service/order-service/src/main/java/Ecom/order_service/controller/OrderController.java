@@ -64,6 +64,12 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrderTracking(id));
     }
 
+    /** GET /orders/all — admin: all orders across all users */
+    @GetMapping("/all")
+    public ResponseEntity<List<OrderResponse>> getAll() {
+        return ResponseEntity.ok(orderService.getAllOrders());
+    }
+
     /** DELETE /orders/{id} — cancel order */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> cancel(@PathVariable Long id) {
