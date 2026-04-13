@@ -35,6 +35,14 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByUser(userId));
     }
 
+    /** GET /orders/mine — current user's orders using JWT header from gateway */
+    @GetMapping("/mine")
+    public ResponseEntity<List<OrderResponse>> getMyOrders(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        if (userId == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(orderService.getOrdersByUser(userId));
+    }
+
     /** PATCH /orders/{id}/status?status=SHIPPED — update order status */
     @PatchMapping("/{id}/status")
     public ResponseEntity<OrderResponse> updateStatus(

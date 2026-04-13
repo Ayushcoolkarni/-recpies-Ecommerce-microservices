@@ -92,6 +92,20 @@ public class UserServiceImpl implements UserService {
     // ── USER PROFILE ──────────────────────────────────────────────
 
     @Override
+    public java.util.List<UserResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(userMapper::toResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    public UserResponse getUserByEmail(String email) {
+        return userMapper.toResponse(
+                userRepository.findByEmail(email)
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email)));
+    }
+
+    @Override
     public UserResponse getUserById(Long id) {
         return userMapper.toResponse(userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + id)));

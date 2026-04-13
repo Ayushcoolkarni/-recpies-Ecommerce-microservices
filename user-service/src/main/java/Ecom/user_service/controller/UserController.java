@@ -14,6 +14,18 @@ public class UserController {
 
     private final UserService userService;
 
+    /** GET /users — admin: list all users */
+    @GetMapping
+    public ResponseEntity<java.util.List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    /** GET /users/email/{email} — internal: fetch user email (used by notification-service) */
+    @GetMapping("/email/{email}")
+    public ResponseEntity<UserResponse> getByEmail(@PathVariable String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));

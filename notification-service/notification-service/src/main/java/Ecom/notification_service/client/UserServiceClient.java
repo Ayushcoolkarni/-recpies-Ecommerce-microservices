@@ -7,38 +7,28 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
-/**
- * Calls user-service to resolve userId → email address.
- *
- * GET http://user-service/users/{id}
- * Response: { "id": 1, "name": "Ayush", "email": "ayush@gmail.com", ... }
- *
- * Returns null gracefully if user-service is unreachable —
- * the notification is skipped with a warning instead of crashing.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class UserServiceClient {
 
-    private final RestClient.Builder restClientBuilder;
+    private final RestClient restClient;
 
+    /**
+     * Fetch user email by userId from user-service.
+     * Returns null gracefully if user-service is down or user not found.
+     */
     public String getEmailByUserId(Long userId) {
         try {
-            Map<?, ?> response = restClientBuilder.build()
-                    .get()
+            Map<?, ?> user = restClient.get()
                     .uri("http://user-service/users/{id}", userId)
                     .retrieve()
                     .body(Map.class);
-
-            if (response != null && response.get("email") != null) {
-                return response.get("email").toString();
+            if (user != null && user.get("email") != null) {
+                return user.get("email").toString();
             }
-
-            log.warn("No email found in user-service response for userId={}", userId);
-
         } catch (Exception e) {
-            log.error("Failed to fetch email for userId={}: {}", userId, e.getMessage());
+            log.error("Could not fetch email for userId={}: {}", userId, e.getMessage());
         }
         return null;
     }

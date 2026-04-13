@@ -71,6 +71,13 @@ spring:
           filters:
             - AuthenticationFilter
 
+        - id: ingredient-service
+          uri: lb://recipe-service
+          predicates:
+            - Path=/ingredients/**
+          filters:
+            - AuthenticationFilter
+
         - id: suggestion-service
           uri: lb://recipe-service
           predicates:

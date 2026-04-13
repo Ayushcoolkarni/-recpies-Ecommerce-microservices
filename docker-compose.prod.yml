@@ -1,0 +1,100 @@
+# docker-compose.prod.yml
+# Production override — uses pre-built images from Docker Hub.
+# Run with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Requires env vars: DOCKERHUB_USERNAME, IMAGE_TAG (set in .env)
+
+services:
+
+  service-registry:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-service-registry:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+
+  api-gateway:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-api-gateway:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+
+  user-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-user-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  recipe-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-recipe-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  inventory-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-inventory-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  order-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-order-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  payment-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-payment-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  notification-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-notification-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+
+  admin-service:
+    build: !reset null
+    image: ${DOCKERHUB_USERNAME}/ecom-admin-service:${IMAGE_TAG:-latest}
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  postgres:
+    restart: always
+    command: >
+      postgres
+        -c max_connections=200
+        -c shared_buffers=256MB
+
+  kafka:
+    restart: always
+    environment:
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824

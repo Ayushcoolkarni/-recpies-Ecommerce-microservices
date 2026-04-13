@@ -8,6 +8,10 @@ public interface UserService {
     AuthResponse login(LoginRequest request);
     AuthResponse refreshToken(String refreshToken);
     UserResponse getUserById(Long id);
+
+    java.util.List<UserResponse> getAllUsers();
+
+    UserResponse getUserByEmail(String email);
     UserResponse updateUser(Long id, RegisterRequest request);
     AddressResponse addAddress(Long userId, AddressRequest request);
     void saveRecipe(Long userId, Long recipeId);

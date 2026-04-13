@@ -139,6 +139,19 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public void restoreStock(Long productId, Integer quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product not found with id: " + productId));
+
+        int newStock = product.getStockQuantity() + quantity;
+        product.setStockQuantity(newStock);
+        product.setAvailable(newStock > 0);
+        productRepository.save(product);
+        log.info("Stock restored for productId {} + {} → total {}", productId, quantity, newStock);
+    }
+
+    @Override
     public void deleteProduct(Long id) {
 
         productRepository.deleteById(id);
