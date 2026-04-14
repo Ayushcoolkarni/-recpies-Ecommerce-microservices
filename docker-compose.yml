@@ -15,8 +15,8 @@ services:
     container_name: ecom-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Ayush@0943
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_MULTIPLE_DATABASES: userDB,orderServiceDB,inventoryDB,paymentDB,recipeDB,adminDB
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -26,7 +26,7 @@ services:
     networks:
       - ecom-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -60,13 +60,19 @@ services:
       - "2181:2181"
     networks:
       - ecom-net
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: ecom-kafka
     restart: unless-stopped
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -81,6 +87,12 @@ services:
       - "9092:9092"
     networks:
       - ecom-net
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
 
   service-registry:
     build:
@@ -94,6 +106,11 @@ services:
       - ecom-net
     environment:
       - SERVER_PORT=8761
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   user-service:
     build:
@@ -107,7 +124,7 @@ services:
       redis:
         condition: service_healthy
       service-registry:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8084:8084"
     networks:
@@ -115,12 +132,13 @@ services:
     environment:
       - SERVER_PORT=8084
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/userDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - JWT_SECRET=${JWT_SECRET}
 
   recipe-service:
     build:
@@ -132,7 +150,7 @@ services:
       postgres:
         condition: service_healthy
       service-registry:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8081:8081"
     networks:
@@ -140,8 +158,8 @@ services:
     environment:
       - SERVER_PORT=8081
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/recipeDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
@@ -155,11 +173,9 @@ services:
       postgres:
         condition: service_healthy
       service-registry:
-        condition: service_started
-      zookeeper:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8082:8082"
     networks:
@@ -167,8 +183,8 @@ services:
     environment:
       - SERVER_PORT=8082
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventoryDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -184,11 +200,9 @@ services:
       postgres:
         condition: service_healthy
       service-registry:
-        condition: service_started
-      zookeeper:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8083:8083"
     networks:
@@ -196,8 +210,8 @@ services:
     environment:
       - SERVER_PORT=8083
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderServiceDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -212,11 +226,9 @@ services:
       postgres:
         condition: service_healthy
       service-registry:
-        condition: service_started
-      zookeeper:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8085:8085"
     networks:
@@ -224,8 +236,8 @@ services:
     environment:
       - SERVER_PORT=8085
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/paymentDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
@@ -238,11 +250,9 @@ services:
     restart: unless-stopped
     depends_on:
       service-registry:
-        condition: service_started
-      zookeeper:
-        condition: service_started
+        condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8086:8086"
     networks:
@@ -266,7 +276,7 @@ services:
       postgres:
         condition: service_healthy
       service-registry:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8087:8087"
     networks:
@@ -274,8 +284,8 @@ services:
     environment:
       - SERVER_PORT=8087
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/adminDB
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=Ayush@0943
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
 
@@ -287,7 +297,7 @@ services:
     restart: unless-stopped
     depends_on:
       service-registry:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8080:8080"
     networks:
@@ -296,4 +306,4 @@ services:
       - SERVER_PORT=8080
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      - JWT_SECRET=${JWT_SECRET}

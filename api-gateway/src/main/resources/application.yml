@@ -1,117 +1,92 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: api-gateway
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins:
-              - "http://localhost:3000"
-              - "http://localhost:4200"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
       routes:
 
-        # Public — no JWT
-        - id: auth-service
+        # ── Public: User auth ────────────────────────────────────────────────
+        - id: user-service-public
           uri: lb://user-service
           predicates:
-            - Path=/auth/**
+            - Path=/api/users/register, /api/users/login, /api/users/refresh
+          # No JwtAuth filter — these are the login/register endpoints
 
-        # Protected routes
-        - id: user-service
+        # ── Protected: User profile ──────────────────────────────────────────
+        - id: user-service-protected
           uri: lb://user-service
           predicates:
-            - Path=/users/**
+            - Path=/api/users/**
           filters:
-            - AuthenticationFilter
+            - JwtAuth
 
+        # ── Recipes (public browse, protected cart/order actions) ────────────
+        - id: recipe-service-public
+          uri: lb://recipe-service
+          predicates:
+            - Path=/api/recipes/**
+            - Method=GET
+          # GET requests are public — browse without login
+
+        - id: recipe-service-protected
+          uri: lb://recipe-service
+          predicates:
+            - Path=/api/recipes/**
+          filters:
+            - JwtAuth
+          # POST/PUT/DELETE require auth
+
+        # ── Orders ───────────────────────────────────────────────────────────
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/orders/**
+            - Path=/api/orders/**
           filters:
-            - AuthenticationFilter
+            - JwtAuth
 
-        - id: cart-service
-          uri: lb://order-service
-          predicates:
-            - Path=/cart/**
-          filters:
-            - AuthenticationFilter
-
+        # ── Inventory ────────────────────────────────────────────────────────
         - id: inventory-service
           uri: lb://inventory-service
           predicates:
-            - Path=/products/**
+            - Path=/api/inventory/**
           filters:
-            - AuthenticationFilter
+            - JwtAuth
 
+        # ── Payments ─────────────────────────────────────────────────────────
         - id: payment-service
           uri: lb://payment-service
           predicates:
-            - Path=/payments/**
+            - Path=/api/payments/**
           filters:
-            - AuthenticationFilter
+            - JwtAuth
 
-        - id: recipe-service
-          uri: lb://recipe-service
-          predicates:
-            - Path=/recipes/**
-          filters:
-            - AuthenticationFilter
-
-        - id: ingredient-service
-          uri: lb://recipe-service
-          predicates:
-            - Path=/ingredients/**
-          filters:
-            - AuthenticationFilter
-
-        - id: suggestion-service
-          uri: lb://recipe-service
-          predicates:
-            - Path=/suggestions/**
-          filters:
-            - AuthenticationFilter
-
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/notifications/**
-          filters:
-            - AuthenticationFilter
-
+        # ── Admin (ADMIN role only — enforce in the service itself too) ──────
         - id: admin-service
           uri: lb://admin-service
           predicates:
-            - Path=/admin/**
+            - Path=/api/admin/**
           filters:
-            - AuthenticationFilter
+            - JwtAuth
+
+# JWT secret — injected from environment variable, never hardcoded
+jwt:
+  secret: ${JWT_SECRET}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
   instance:
-    prefer-ip-address: true
-
-# JWT secret — must match user-service jwt.secret exactly
-jwt:
-  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:true}
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
