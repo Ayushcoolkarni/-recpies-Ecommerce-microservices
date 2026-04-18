@@ -49,14 +49,11 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
 
-
-             if (exchange.getRequest().getMethod().name().equals("OPTIONS")) {
-                 return chain.filter(exchange);
+            if (exchange.getRequest().getMethod().name().equals("OPTIONS")) {
+                return chain.filter(exchange);
             }
 
             String path = exchange.getRequest().getURI().getPath();
-
-           
 
             // Skip auth for public routes
             if (isPublicPath(path)) {
@@ -94,16 +91,19 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     }
 
     private Claims validateToken(String token) {
-       if (jwtSecret == null || jwtSecret.length() < 32) {
-    throw new RuntimeException("JWT secret is not properly configured");
-}
+        if (jwtSecret == null || jwtSecret.length() < 32) {
+            throw new RuntimeException("JWT secret is not properly configured");
+        }
 
-SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
+        // FIX: JJWT 0.12.x API — parserBuilder() → parser(), setSigningKey() → verifyWith(),
+        //      parseClaimsJws() → parseSignedClaims(), getBody() → getPayload()
+        return Jwts.parser()
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     private boolean isPublicPath(String path) {

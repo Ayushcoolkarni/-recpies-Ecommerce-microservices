@@ -39,6 +39,9 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
+# Install wget for Docker healthcheck
+RUN apk add --no-cache wget
+
 # Non-root user for security
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring
