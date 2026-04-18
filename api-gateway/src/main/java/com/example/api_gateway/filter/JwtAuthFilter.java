@@ -48,7 +48,15 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
+
+
+             if (exchange.getRequest().getMethod().name().equals("OPTIONS")) {
+                 return chain.filter(exchange);
+            }
+
             String path = exchange.getRequest().getURI().getPath();
+
+           
 
             // Skip auth for public routes
             if (isPublicPath(path)) {
@@ -86,7 +94,11 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
     }
 
     private Claims validateToken(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+       if (jwtSecret == null || jwtSecret.length() < 32) {
+    throw new RuntimeException("JWT secret is not properly configured");
+}
+
+SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
