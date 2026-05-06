@@ -25,7 +25,7 @@ services:
       POSTGRES_MULTIPLE_DATABASES: userDB,orderServiceDB,inventoryDB,paymentDB,recipeDB,adminDB
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./infra/docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     ports:
       - "5432:5432"
     networks:
@@ -52,6 +52,7 @@ services:
       timeout: 5s
       retries: 5
 
+      
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: ecom-zookeeper
@@ -65,23 +66,17 @@ services:
       - "2181:2181"
     networks:
       - ecom-net
-    healthcheck:
-      test: ["CMD", "bash", "-c", "echo srvr | nc localhost 2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # no healthcheck — kafka's own healthcheck covers the chain
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: ecom-kafka
     restart: unless-stopped
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper          # service_started (zookeeper has no healthcheck)
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # PLAINTEXT_HOST (9092) for host access; PLAINTEXT (29092) for inter-service
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -132,7 +127,7 @@ services:
       - grafana-data:/var/lib/grafana
       - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3001:3000"       # ← moved to 3001 — frontend dev server uses 3000
+      - "3001:3000"
     networks:
       - ecom-net
     depends_on:
@@ -148,6 +143,11 @@ services:
       dockerfile: Dockerfile
     container_name: ecom-service-registry
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8761:8761"
     networks:
@@ -184,7 +184,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 150s
 
   user-service:
     build:
@@ -213,7 +213,6 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - JWT_SECRET=${JWT_SECRET}
-      # OTP email config
       - SPRING_MAIL_HOST=smtp.gmail.com
       - SPRING_MAIL_PORT=587
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
@@ -224,7 +223,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 90s
+      start_period: 150s
 
   recipe-service:
     build:
@@ -277,17 +276,18 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/inventoryDB
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      # GAP 5 FIX: use internal kafka listener
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - EUREKA_INSTANCE_HOSTNAME=ecom-inventory-service
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 90s
+      start_period: 270s
 
   order-service:
     build:
@@ -305,12 +305,10 @@ services:
       inventory-service:
         condition: service_healthy
     ports:
-     
       - "8083:8083"
     networks:
       - ecom-net
     environment:
-     
       - SERVER_PORT=8083
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderServiceDB
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -323,7 +321,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 90s
+      start_period: 270s
 
   payment-service:
     build:
@@ -373,7 +371,6 @@ services:
     networks:
       - ecom-net
     environment:
-      # GAP 4 FIX: correct port + internal kafka listener
       - SERVER_PORT=8086
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-registry:8761/eureka
@@ -426,9 +423,6 @@ services:
       context: ./recipe-frontend
       dockerfile: Dockerfile
       args:
-        # Baked into the React bundle at build time.
-        # In docker-compose the browser talks to the gateway on the HOST network
-        # (not the Docker internal network), so we use localhost:8080.
         REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080}
     container_name: ecom-frontend
     restart: unless-stopped
@@ -436,7 +430,7 @@ services:
       api-gateway:
         condition: service_healthy
     ports:
-      - "3000:80"     # nginx inside the container listens on 80
+      - "3000:80"
     networks:
       - ecom-net
     healthcheck:
