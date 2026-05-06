@@ -66,7 +66,7 @@ services:
     networks:
       - ecom-net
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      test: ["CMD", "bash", "-c", "echo srvr | nc localhost 2181"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -224,7 +224,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 45s
+      start_period: 90s
 
   recipe-service:
     build:
@@ -287,7 +287,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 45s
+      start_period: 90s
 
   order-service:
     build:
@@ -305,12 +305,12 @@ services:
       inventory-service:
         condition: service_healthy
     ports:
-      # GAP 3 FIX: was missing from original, correctly mapped to 8083
+     
       - "8083:8083"
     networks:
       - ecom-net
     environment:
-      # GAP 3 FIX: SERVER_PORT=8083 overrides the yml default of 8081
+     
       - SERVER_PORT=8083
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/orderServiceDB
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
@@ -323,7 +323,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 45s
+      start_period: 90s
 
   payment-service:
     build:
